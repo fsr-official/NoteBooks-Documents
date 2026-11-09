@@ -1,0 +1,100 @@
+name: Notify NoteBooks of content update
+
+on:
+  workflow_call:
+    secrets:
+      NOTEBOOKS_UPDATE_URL:
+        description: NoteBooks /api/webhooks/content-update endpoint
+        required: true
+      NOTEBOOKS_UPDATE_SECRET:
+        description: HMAC-SHA256 secret shared with the NoteBooks app
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notebooks-content-update-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the calling content repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate and validate files.json
+        run: |
+          set -euo pipefail
+          test -f fmtree.py
+          python3 fmtree.py --out files.json
+          test -s files.json
+          python3 - <<'PY'
+          import json
+          import re
+
+          with open('files.json', encoding='utf-8') as handle:
+              manifest = json.load(handle)
+          if not isinstance(manifest, dict):
+              raise SystemExit('files.json must contain a JSON object')
+
+          def verify(node):
+              if not isinstance(node, dict):
+                  return
+              if node.get('type') == 'file' and not re.fullmatch(r'[a-fA-F0-9]{40}', str(node.get('sha', ''))):
+                  raise SystemExit(f"file entry lacks a Git blob SHA: {node.get('path') or node.get('name')}")
+              for child in node.get('children', []):
+                  verify(child)
+
+          verify(manifest)
+          print('files.json and file blob SHAs are valid')
+          PY
+
+      - name: Commit the generated manifest
+        id: manifest
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add files.json
+          if ! git diff --cached --quiet -- files.json; then
+            git commit -m 'chore: refresh files.json [skip ci]'
+            git push origin "HEAD:${BRANCH}"
+          fi
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Send signed commit notification
+        env:
+          UPDATE_URL: ${{ secrets.NOTEBOOKS_UPDATE_URL }}
+          UPDATE_SECRET: ${{ secrets.NOTEBOOKS_UPDATE_SECRET }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ steps.manifest.outputs.commit }}
+        run: |
+          set -euo pipefail
+          test -n "$UPDATE_URL"
+          test -n "$UPDATE_SECRET"
+          payload="$(jq -cn \
+            --arg repository "$REPOSITORY" \
+            --arg branch "$BRANCH" \
+            --arg commitSha "$COMMIT_SHA" \
+            '{schemaVersion:1,kind:"content",repository:$repository,branch:$branch,commitSha:$commitSha}')"
+          printf '%s' "$payload" > payload.json
+          signature="sha256=$(openssl dgst -sha256 -hmac "$UPDATE_SECRET" -hex payload.json | awk '{print $NF}')"
+          curl --fail-with-body --retry 3 --retry-all-errors --max-time 30 \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H 'User-Agent: GitHub-Actions-NoteBooks-Content-Update' \
+            -H "X-NoteBooks-Signature: $signature" \
+            --data-binary @payload.json \
+            "$UPDATE_URL"

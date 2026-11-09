@@ -1,0 +1,61 @@
+{
+  "type": "folder",
+  "name": "NoteBooks-Documents",
+  "children": [
+    {
+      "type": "folder",
+      "name": "docs",
+      "children": [
+        {
+          "type": "file",
+          "name": "CONTENT-UPDATE-CONTRACT.md",
+          "path": "docs/CONTENT-UPDATE-CONTRACT.md",
+          "sha": "28a8d948193ec05eb3021a5da120d80c21285e1c",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "DEV-WORKSPACE.md",
+          "path": "docs/DEV-WORKSPACE.md",
+          "sha": "5132c918d81f1e1c58deb6b385e5b90fc8e6d602",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "README.md",
+          "path": "docs/README.md",
+          "sha": "f34d50e87cf74e4aa67183279e1d25fb8f7a861b",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "REPO-AND-FILES-JSON.md",
+          "path": "docs/REPO-AND-FILES-JSON.md",
+          "sha": "c67b1ca22ba4839506a381b194507a9b0be4cccb",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "STREAM-ARCHITECTURE.md",
+          "path": "docs/STREAM-ARCHITECTURE.md",
+          "sha": "3ae2b2cdf8aaae6de6bbb79fd0d104c77850651c",
+          "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "SYSTEM-OVERVIEW.md",
+          "path": "docs/SYSTEM-OVERVIEW.md",
+          "sha": "01445c2b2e8c70f1664cc3dbc483cffc262fec9a",
+          "mime": "text/markdown"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "GITHUB-REPOSITORIES.md",
+      "path": "GITHUB-REPOSITORIES.md",
+      "sha": "4c353c26d7211ab1c7c930010a82141ca0ad13eb",
+      "mime": "text/markdown"
+    }
+  ]
+}

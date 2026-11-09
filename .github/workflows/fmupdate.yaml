@@ -1,0 +1,15 @@
+name: Notify NoteBooks of content updates
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  notify:
+    uses: fsr-official/NoteBooks-Documents/.github/workflows/reusable-content-update.yml@main
+    secrets:
+      NOTEBOOKS_UPDATE_URL: ${{ secrets.NOTEBOOKS_UPDATE_URL }}
+      NOTEBOOKS_UPDATE_SECRET: ${{ secrets.NOTEBOOKS_UPDATE_SECRET }}

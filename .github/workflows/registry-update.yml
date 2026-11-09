@@ -1,0 +1,38 @@
+name: Notify NoteBooks of registry update
+
+on:
+  push:
+    paths:
+      - GITHUB-REPOSITORIES.md
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send signed registry notification
+        env:
+          UPDATE_URL: ${{ secrets.NOTEBOOKS_UPDATE_URL }}
+          UPDATE_SECRET: ${{ secrets.NOTEBOOKS_UPDATE_SECRET }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test -n "$UPDATE_URL"
+          test -n "$UPDATE_SECRET"
+          payload="$(jq -cn \
+            --arg repository "$REPOSITORY" \
+            --arg branch "$BRANCH" \
+            --arg commitSha "$COMMIT_SHA" \
+            '{schemaVersion:1,kind:"registry",repository:$repository,branch:$branch,commitSha:$commitSha}')"
+          printf '%s' "$payload" > payload.json
+          signature="sha256=$(openssl dgst -sha256 -hmac "$UPDATE_SECRET" -hex payload.json | awk '{print $NF}')"
+          curl --fail-with-body --retry 3 --retry-all-errors --max-time 30 \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H 'User-Agent: GitHub-Actions-NoteBooks-Registry-Update' \
+            -H "X-NoteBooks-Signature: $signature" \
+            --data-binary @payload.json \
+            "$UPDATE_URL"
