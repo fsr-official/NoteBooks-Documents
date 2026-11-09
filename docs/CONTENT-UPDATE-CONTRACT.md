@@ -22,6 +22,8 @@ Sign the exact UTF-8 request body with HMAC-SHA256 using the shared `NOTEBOOKS_U
 
 The commit SHA is a content locator, not a manually managed release version. Content updates are processed only if the reported SHA is still the branch head; the app reads `files.json` at that immutable SHA. Registry notifications resolve to the current head of the configured documents branch so a later unrelated documentation commit cannot cause a registry change to be skipped. Enabled repositories in the `science`, `commerce`, `humanities`, and `developers` streams can send content updates on their configured branch. Repositories must include the SHA and MIME metadata for files in `files.json`; Git blob `sha` values are used to detect exact file changes. The app records the processed repo commit even when no served file changed, but does not publish a content update in that case.
 
+The first content notification after a repository is registered establishes its SHA baseline and does not publish file changes. Later notifications publish added, modified, and removed paths by comparing Git blob SHAs.
+
 The content endpoint returns after processing the update. A successful response includes the central catalog version and whether served content changed. Failed verification or processing must be treated as a failed workflow run so the update can be retried.
 
 ## Content repository workflow setup
